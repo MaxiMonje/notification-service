@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { postEmailNotification } from "../controllers/notifications.controller";
+import { postEmailNotification, postWhatsAppNotification  } from "../controllers/notifications.controller";
 import { requireApiKey } from "../middlewares/apiKey";
 import { emailQueue } from "../queue/email.queue";
+import { whatsappQueue } from "../queue/whatsapp.queue";
 
 const router = Router();
 
@@ -20,5 +21,16 @@ router.get("/notifications/job/:id", requireApiKey, async (req, res) => {
 
   res.json({ id, state, attemptsMade, returnvalue, failedReason });
 });
+
+// WHATSAPP
+router.post("/notifications/whatsapp", requireApiKey, postWhatsAppNotification);
+router.get("/notifications/wpp/job/:id", requireApiKey, async (req, res) => {
+  const id = req.params.id;
+  const job = await whatsappQueue.getJob(id);
+  if (!job) return res.status(404).json({ message: "Job not found" });
+  const state = await job.getState();
+  res.json({ id, state, attemptsMade: job.attemptsMade, returnvalue: job.returnvalue, failedReason: job.failedReason });
+});
+
 
 export default router;
